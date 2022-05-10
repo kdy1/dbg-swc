@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 use swc_timer::timer;
+use tracing::info;
 
 /// Execute a javascript file after performing some preprocessing.
 #[derive(Debug, Subcommand)]
@@ -24,7 +25,15 @@ impl TestCommand {
 
         {
             let _timer = timer!("run");
+            let stdout = output
+                .runtime
+                .execute(&output.code)
+                .context("failed to execute generated code")?;
+
+            info!("----- Stdout -----\n{}", stdout);
         }
+
+        Ok(())
     }
 }
 
@@ -53,4 +62,8 @@ pub struct Output {
 pub enum JsRuntime {
     Node,
     Deno,
+}
+
+impl JsRuntime {
+    pub fn execute(&self, code: &str) -> Result<String> {}
 }
