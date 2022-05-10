@@ -4,10 +4,8 @@ description = "Debug utilities"
 edition = "2021"
 license = "Apache-2.0"
 name = "dbg-swc"
-repository = "https://github.com/swc-project/swc.git"
+repository = "https://github.com/kdy1/dbg-swc.git"
 version = "0.11.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.57"
