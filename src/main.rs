@@ -1,3 +1,4 @@
-mod minifier;
+mod bundle;
+mod minify;
 
 fn main() {}
