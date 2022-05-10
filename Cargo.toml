@@ -10,4 +10,11 @@ version = "0.11.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.57"
 clap = "3"
+rayon = "1.5.2"
+swc_atoms = "0.2.11"
+swc_common = "0.17.25"
+swc_ecma_ast = "0.77.1"
+swc_ecma_minifier = "0.111.6"
+swc_ecma_parser = "0.103.0"
