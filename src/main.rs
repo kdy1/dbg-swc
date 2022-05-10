@@ -14,11 +14,11 @@ struct AppArgs {
 
 #[derive(Debug, Subcommand)]
 enum Cmd {
-    #[clap(flatten)]
+    #[clap(subcommand)]
     Bundle(BundleCommand),
-    #[clap(flatten)]
+    #[clap(subcommand)]
     Minify(MinifyCommand),
-    #[clap(flatten)]
+    #[clap(subcommand)]
     Test(TestCommand),
 }
 
