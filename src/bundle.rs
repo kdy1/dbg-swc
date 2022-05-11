@@ -8,9 +8,9 @@ use crate::util::task;
 #[derive(Debug, Subcommand)]
 pub enum BundleCommand {}
 
-pub fn bundle(entry: String) -> Result<Module> {
+pub fn bundle(entry_url: &str) -> Result<Module> {
     task(|| {
         let _timer = timer!("bundle");
     })
-    .with_context(|| format!("failed to bundle {}", entry))
+    .with_context(|| format!("failed to bundle `{}`", entry_url))
 }
