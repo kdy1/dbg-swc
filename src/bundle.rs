@@ -1,59 +1,39 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    process::{Command, Stdio},
+    sync::Arc,
+};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Subcommand;
-use swc_bundler::{Bundler, Hook, ModuleRecord};
-use swc_common::{FileName, SourceMap, Span, GLOBALS};
-use swc_ecma_ast::{KeyValueProp, Module};
+use swc_common::{FileName, SourceMap};
 use swc_timer::timer;
-use url::Url;
 
-use crate::util::wrap_task;
+use crate::util::{parse_js, wrap_task, ModuleRecord};
 
 #[derive(Debug, Subcommand)]
 pub enum BundleCommand {}
 
-pub fn bundle(cm: Arc<SourceMap>, entry_url: &Url) -> Result<Module> {
+pub fn bundle(cm: Arc<SourceMap>, entry_url: &str) -> Result<ModuleRecord> {
     wrap_task(|| {
         let _timer = timer!("bundle");
 
-        GLOBALS.with(|globals| {
-            let bundler = Bundler::new(
-                globals,
-                cm,
-                loader,
-                resolver,
-                swc_bundler::Config {
-                    require: true,
-                    disable_inliner: true,
-                    disable_hygiene: false,
-                    disable_fixer: false,
-                    disable_dce: true,
-                    external_modules: vec![],
-                    module: swc_bundler::ModuleType::Es,
-                },
-                box BundlerHook,
-            );
+        let mut cmd = Command::new("deno");
+        cmd.arg("bundle");
+        cmd.arg(entry_url);
 
-            let mut entries = HashMap::default();
-            entries.insert("main", FileName::Url(entry_url.clone()));
-            let mut modules = bundler.bundle(entries).context("Bundler.bundle failed")?;
-            let built = modules.remove(0);
+        cmd.stderr(Stdio::inherit());
 
-            Ok(built.module)
-        })
+        let output = cmd.output().context("failed to invoke `deno bundle`")?;
+
+        if !output.status.success() {
+            bail!("`deno bundle` failed with status code {}", output.status);
+        }
+
+        let code =
+            String::from_utf8(output.stdout).context("deno bundle emitted non-utf8 output")?;
+
+        let fm = cm.new_source_file(FileName::Anon, code);
+        parse_js(fm).context("failed to parse js filed emitted by `deno bundle`")
     })
     .with_context(|| format!("failed to bundle `{}`", entry_url))
-}
-
-struct BundlerHook;
-
-impl Hook for BundlerHook {
-    fn get_import_meta_props(
-        &self,
-        span: Span,
-        module_record: &ModuleRecord,
-    ) -> Result<Vec<KeyValueProp>> {
-        Ok(vec![])
-    }
 }
