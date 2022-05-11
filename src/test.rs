@@ -1,5 +1,6 @@
 use std::{
     fs,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::Arc,
 };
@@ -35,7 +36,7 @@ impl TestCommand {
             let _timer = timer!("run");
             let stdout = output
                 .runtime
-                .execute(&output.code)
+                .execute(&output.path)
                 .context("failed to execute generated code")?;
 
             info!("----- Stdout -----\n{}", stdout);
@@ -76,17 +77,18 @@ impl TestMinifiedBundleCommand {
         let code =
             print_js(cm.clone(), &minified, true).context("failed to convert ast to code")?;
 
-        fs::write("output.js", code.as_bytes()).context("failed to write code as file")?;
+        let path = Path::new("output.js").to_path_buf();
+        fs::write(&path, code.as_bytes()).context("failed to write code as file")?;
 
         Ok(Output {
-            code,
+            path,
             runtime: JsRuntime::Deno,
         })
     }
 }
 
 pub struct Output {
-    pub code: String,
+    pub path: PathBuf,
     pub runtime: JsRuntime,
 }
 
@@ -96,14 +98,14 @@ pub enum JsRuntime {
 }
 
 impl JsRuntime {
-    pub fn execute(&self, code: &str) -> Result<String> {
+    pub fn execute(&self, path: &Path) -> Result<String> {
         match self {
             JsRuntime::Node => todo!("node.execute"),
             JsRuntime::Deno => {
                 let mut cmd = Command::new("deno");
-                cmd.arg("eval").arg("--no-check");
+                cmd.arg("run").arg("--no-check");
 
-                cmd.arg(code);
+                cmd.arg(path);
 
                 cmd.stderr(Stdio::inherit());
 
