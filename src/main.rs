@@ -5,6 +5,7 @@ use self::{bundle::BundleCommand, minify::MinifyCommand, test::TestCommand};
 mod bundle;
 mod minify;
 mod test;
+mod util;
 
 #[derive(Debug, clap::Parser)]
 struct AppArgs {
