@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 use clap::{StructOpt, Subcommand};
 
 use self::{bundle::BundleCommand, minify::MinifyCommand, test::TestCommand};
