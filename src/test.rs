@@ -1,4 +1,5 @@
 use std::{
+    fs,
     process::{Command, Stdio},
     sync::Arc,
 };
@@ -74,6 +75,8 @@ impl TestMinifiedBundleCommand {
 
         let code =
             print_js(cm.clone(), &minified, true).context("failed to convert ast to code")?;
+
+        fs::write("output.js", code.as_bytes()).context("failed to write code as file")?;
 
         Ok(Output {
             code,
