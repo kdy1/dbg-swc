@@ -1,15 +1,16 @@
 use std::{
-    path::PathBuf,
     process::{Command, Stdio},
+    sync::Arc,
 };
 
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
-use swc_bundler::Bundler;
+use swc_common::SourceMap;
+use swc_ecma_minifier::option::MinifyOptions;
 use swc_timer::timer;
 use tracing::info;
 
-use crate::bundle::bundle;
+use crate::{bundle::bundle, util::print_js};
 
 /// Execute a javascript file after performing some preprocessing.
 #[derive(Debug, Subcommand)]
@@ -18,14 +19,14 @@ pub enum TestCommand {
 }
 
 impl TestCommand {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self, cm: Arc<SourceMap>) -> Result<()> {
         let _timer = timer!("test");
 
         let output = {
             let _timer = timer!("process");
 
             match self {
-                TestCommand::MinifiedBundle(cmd) => cmd.run(),
+                TestCommand::MinifiedBundle(cmd) => cmd.run(cm),
             }?
         };
 
@@ -49,12 +50,35 @@ pub struct TestMinifiedBundleCommand {
 }
 
 impl TestMinifiedBundleCommand {
-    fn run(self) -> Result<Output> {
-        let bundle = bundle(&self.entry)?;
+    fn run(self, cm: Arc<SourceMap>) -> Result<Output> {
+        let bundle = bundle(cm.clone(), &self.entry)?;
 
         let minified = {
             let _timer = timer!("minify");
+            swc_ecma_minifier::optimize(
+                bundle.module,
+                cm.clone(),
+                None,
+                None,
+                &MinifyOptions {
+                    compress: Some(Default::default()),
+                    mangle: Some(Default::default()),
+                    ..Default::default()
+                },
+                &swc_ecma_minifier::option::ExtraOptions {
+                    unresolved_mark: bundle.unresolved_mark,
+                    top_level_mark: bundle.top_level_mark,
+                },
+            )
         };
+
+        let code =
+            print_js(cm.clone(), &minified, true).context("failed to convert ast to code")?;
+
+        Ok(Output {
+            code,
+            runtime: JsRuntime::Deno,
+        })
     }
 }
 
