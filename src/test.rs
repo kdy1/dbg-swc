@@ -1,6 +1,9 @@
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 use swc_timer::timer;
 use tracing::info;
@@ -65,5 +68,29 @@ pub enum JsRuntime {
 }
 
 impl JsRuntime {
-    pub fn execute(&self, code: &str) -> Result<String> {}
+    pub fn execute(&self, code: &str) -> Result<String> {
+        match self {
+            JsRuntime::Node => todo!("node.execute"),
+            JsRuntime::Deno => {
+                let mut cmd = Command::new("deno");
+                cmd.arg("eval").arg("--no-check");
+
+                cmd.arg(code);
+
+                cmd.stderr(Stdio::inherit());
+
+                let output = cmd.output().context("failed to get output from deno")?;
+
+                if !output.status.success() {
+                    bail!("deno exited with status {}", output.status);
+                }
+
+                Ok(
+                    (String::from_utf8(output.stdout).context("deno emitted non-utf8 string")?)
+                        .trim()
+                        .to_string(),
+                )
+            }
+        }
+    }
 }
