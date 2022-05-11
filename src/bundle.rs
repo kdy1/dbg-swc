@@ -2,9 +2,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result};
 use clap::Subcommand;
-use swc_bundler::Bundler;
-use swc_common::{FileName, SourceMap, GLOBALS};
-use swc_ecma_ast::Module;
+use swc_bundler::{Bundler, Hook, ModuleRecord};
+use swc_common::{FileName, SourceMap, Span, GLOBALS};
+use swc_ecma_ast::{KeyValueProp, Module};
 use swc_timer::timer;
 use url::Url;
 
@@ -24,13 +24,13 @@ pub fn bundle(cm: Arc<SourceMap>, entry_url: &Url) -> Result<Module> {
                 loader,
                 resolver,
                 swc_bundler::Config {
-                    require: (),
-                    disable_inliner: (),
-                    disable_hygiene: (),
-                    disable_fixer: (),
-                    disable_dce: (),
-                    external_modules: (),
-                    module: (),
+                    require: true,
+                    disable_inliner: true,
+                    disable_hygiene: false,
+                    disable_fixer: false,
+                    disable_dce: true,
+                    external_modules: vec![],
+                    module: swc_bundler::ModuleType::Es,
                 },
                 box BundlerHook,
             );
@@ -47,3 +47,13 @@ pub fn bundle(cm: Arc<SourceMap>, entry_url: &Url) -> Result<Module> {
 }
 
 struct BundlerHook;
+
+impl Hook for BundlerHook {
+    fn get_import_meta_props(
+        &self,
+        span: Span,
+        module_record: &ModuleRecord,
+    ) -> Result<Vec<KeyValueProp>> {
+        Ok(vec![])
+    }
+}
