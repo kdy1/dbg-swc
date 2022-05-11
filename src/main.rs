@@ -1,6 +1,14 @@
 #![feature(box_syntax)]
 
+use std::sync::Arc;
+
+use anyhow::Result;
 use clap::{StructOpt, Subcommand};
+use swc_common::{
+    errors::{ColorConfig, HANDLER},
+    Globals, SourceMap, GLOBALS,
+};
+use swc_error_reporters::handler::{try_with_handler, HandlerOpts};
 
 use self::{bundle::BundleCommand, minify::MinifyCommand, test::TestCommand};
 
@@ -25,12 +33,25 @@ enum Cmd {
     Test(TestCommand),
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = AppArgs::parse();
 
-    match args.cmd {
-        Cmd::Bundle(_) => todo!(),
-        Cmd::Minify(_) => todo!(),
-        Cmd::Test(_) => todo!(),
-    }
+    let cm = Arc::new(SourceMap::default());
+
+    try_with_handler(
+        cm.clone(),
+        HandlerOpts {
+            color: ColorConfig::Always,
+            skip_filename: false,
+        },
+        |handler| {
+            GLOBALS.set(&Globals::default(), || {
+                HANDLER.set(handler, || match args.cmd {
+                    Cmd::Bundle(_) => todo!(),
+                    Cmd::Minify(_) => todo!(),
+                    Cmd::Test(cmd) => cmd.run(cm),
+                })
+            })
+        },
+    )
 }
