@@ -9,6 +9,8 @@ use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 use swc_common::SourceMap;
 use swc_ecma_minifier::option::MinifyOptions;
+use swc_ecma_transforms_base::fixer::fixer;
+use swc_ecma_visit::VisitMutWith;
 use swc_timer::timer;
 use tracing::info;
 
@@ -55,7 +57,7 @@ impl TestMinifiedBundleCommand {
     fn run(self, cm: Arc<SourceMap>) -> Result<Output> {
         let bundle = bundle(cm.clone(), &self.entry)?;
 
-        let minified = {
+        let mut minified = {
             let _timer = timer!("minify");
             swc_ecma_minifier::optimize(
                 bundle.module,
@@ -73,6 +75,8 @@ impl TestMinifiedBundleCommand {
                 },
             )
         };
+
+        minified.visit_mut_with(&mut fixer(None));
 
         let code =
             print_js(cm.clone(), &minified, true).context("failed to convert ast to code")?;
