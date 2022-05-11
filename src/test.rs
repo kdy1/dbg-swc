@@ -5,8 +5,11 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
+use swc_bundler::Bundler;
 use swc_timer::timer;
 use tracing::info;
+
+use crate::bundle::bundle;
 
 /// Execute a javascript file after performing some preprocessing.
 #[derive(Debug, Subcommand)]
@@ -42,14 +45,12 @@ impl TestCommand {
 
 #[derive(Debug, Args)]
 pub struct TestMinifiedBundleCommand {
-    entry: PathBuf,
+    entry: String,
 }
 
 impl TestMinifiedBundleCommand {
     fn run(self) -> Result<Output> {
-        let bundle = {
-            let _timer = timer!("bundle");
-        };
+        let bundle = bundle(&self.entry)?;
 
         let minified = {
             let _timer = timer!("minify");
