@@ -285,6 +285,7 @@ dependencies = [
  "swc_timer",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
